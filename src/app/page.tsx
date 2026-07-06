@@ -5,7 +5,7 @@ import axios from 'axios';
 import toast, { Toaster } from 'react-hot-toast';
 import { Upload, FileText, Search, LogOut, Building2, UserPlus, Download, Trash2, CheckCircle, X, Edit2, Users, Database, Landmark } from 'lucide-react';
 
-const API_URL = 'http://localhost:3001';
+const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3003';
 
 export default function Home() {
   const [token, setToken] = useState<string | null>(null);
