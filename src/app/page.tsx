@@ -30,6 +30,7 @@ export default function Home() {
     dni: '', nombre: '', ruc: '', direccion: '', banco: '', cci: '', colegio: '', anio: '', fecha_dj: ''
   });
   const [bancoData, setBancoData] = useState({ nombre: '' });
+  const [confirmModal, setConfirmModal] = useState<{isOpen: boolean, targetId: string | number | null, type: 'persona' | 'banco', action: 'enable' | 'disable'}>({ isOpen: false, targetId: null, type: 'persona', action: 'disable' });
 
   useEffect(() => {
     const savedToken = localStorage.getItem('token');
@@ -111,8 +112,13 @@ export default function Home() {
       });
       toast.success(res.data.message, { id: 'upload' });
       fetchPersonas(token!);
-    } catch (error) {
-      toast.error('Error al subir archivo', { id: 'upload' });
+    } catch (error: any) {
+      const apiMessage = error.response?.data?.message;
+      if (typeof apiMessage === 'string') {
+        toast.error(apiMessage, { id: 'upload', duration: 6000 });
+      } else {
+        toast.error('Error al subir archivo', { id: 'upload' });
+      }
     } finally {
       setIsUploading(false);
       e.target.value = '';
@@ -270,6 +276,19 @@ export default function Home() {
     }
   };
 
+  const executeConfirm = async () => {
+    if (!confirmModal.targetId) return;
+    const { targetId, type, action } = confirmModal;
+    const isEnable = action === 'enable';
+    
+    if (type === 'persona') {
+      await togglePersonaStatus(targetId as string, isEnable);
+    } else if (type === 'banco') {
+      await handleToggleBanco(targetId as number, isEnable);
+    }
+    setConfirmModal({ isOpen: false, targetId: null, type: 'persona', action: 'disable' });
+  };
+
   const toggleSelection = (dni: string) => {
     const newSelection = new Set(selectedDnis);
     if (newSelection.has(dni)) {
@@ -332,6 +351,40 @@ export default function Home() {
     <div className="app-container">
       <Toaster position="top-right" />
       
+      {/* Modal de Confirmación Genérico */}
+      {confirmModal.isOpen && (
+        <div style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: 'rgba(0,0,0,0.5)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 10000 }}>
+          <div className="panel animate-fade" style={{ width: '90%', maxWidth: '400px', textAlign: 'center', padding: '2rem' }}>
+            <div style={{ marginBottom: '1.5rem', color: confirmModal.action === 'disable' ? 'var(--danger)' : 'var(--success)' }}>
+              {confirmModal.action === 'disable' ? <Trash2 size={48} style={{ margin: '0 auto' }} /> : <CheckCircle size={48} style={{ margin: '0 auto' }} />}
+            </div>
+            <h3 style={{ fontSize: '1.25rem', fontWeight: 'bold', marginBottom: '1rem', color: 'var(--text-main)' }}>
+              ¿Desea {confirmModal.action === 'enable' ? 'habilitar' : 'deshabilitar'} {confirmModal.type === 'persona' ? 'esta persona' : 'este banco'}?
+            </h3>
+            <p style={{ color: 'var(--text-muted)', marginBottom: '2rem', fontSize: '0.9rem' }}>
+              {confirmModal.action === 'enable' 
+                ? 'El registro volverá a estar disponible y visible en las listas activas.' 
+                : 'El registro dejará de estar disponible y se ocultará de las listas activas.'}
+            </p>
+            <div style={{ display: 'flex', justifyContent: 'center', gap: '1rem' }}>
+              <button 
+                className="btn btn-outline" 
+                onClick={() => setConfirmModal({ isOpen: false, targetId: null, type: 'persona', action: 'disable' })}
+              >
+                Cancelar
+              </button>
+              <button 
+                className="btn" 
+                style={{ backgroundColor: confirmModal.action === 'disable' ? 'var(--danger)' : 'var(--success)', border: 'none', color: '#fff' }}
+                onClick={executeConfirm}
+              >
+                Sí, {confirmModal.action === 'enable' ? 'Habilitar' : 'Deshabilitar'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Modal para Agregar/Editar Persona */}
       {showModal && (
         <div style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: 'rgba(0,0,0,0.5)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 9999 }}>
@@ -349,8 +402,8 @@ export default function Home() {
 
             <form onSubmit={handleSavePersona} style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
               <div style={{ display: 'flex', gap: '1rem' }}>
-                <div style={{ flex: 1 }}><label style={{ fontSize: '0.8rem', fontWeight: 'bold', color: 'var(--text-muted)' }}>DNI</label><input required className="input" value={formData.dni} onChange={e => setFormData({...formData, dni: e.target.value})} /></div>
-                <div style={{ flex: 1 }}><label style={{ fontSize: '0.8rem', fontWeight: 'bold', color: 'var(--text-muted)' }}>RUC</label><input required className="input" value={formData.ruc} onChange={e => setFormData({...formData, ruc: e.target.value})} /></div>
+                <div style={{ flex: 1 }}><label style={{ fontSize: '0.8rem', fontWeight: 'bold', color: 'var(--text-muted)' }}>DNI (8 dígitos)</label><input required className="input" value={formData.dni} onChange={e => setFormData({...formData, dni: e.target.value.replace(/\D/g, '')})} minLength={8} maxLength={8} placeholder="8 números" /></div>
+                <div style={{ flex: 1 }}><label style={{ fontSize: '0.8rem', fontWeight: 'bold', color: 'var(--text-muted)' }}>RUC (Opcional, 11 dígitos)</label><input className="input" value={formData.ruc} onChange={e => setFormData({...formData, ruc: e.target.value.replace(/\D/g, '')})} minLength={11} maxLength={11} placeholder="11 números" /></div>
               </div>
               <div><label style={{ fontSize: '0.8rem', fontWeight: 'bold', color: 'var(--text-muted)' }}>Nombre Completo</label><input required className="input" value={formData.nombre} onChange={e => setFormData({...formData, nombre: e.target.value})} /></div>
               <div><label style={{ fontSize: '0.8rem', fontWeight: 'bold', color: 'var(--text-muted)' }}>Dirección</label><input required className="input" value={formData.direccion} onChange={e => setFormData({...formData, direccion: e.target.value})} /></div>
@@ -364,7 +417,7 @@ export default function Home() {
                     ))}
                   </select>
                 </div>
-                <div style={{ flex: 2 }}><label style={{ fontSize: '0.8rem', fontWeight: 'bold', color: 'var(--text-muted)' }}>CCI</label><input required className="input" value={formData.cci} onChange={e => setFormData({...formData, cci: e.target.value})} /></div>
+                <div style={{ flex: 2 }}><label style={{ fontSize: '0.8rem', fontWeight: 'bold', color: 'var(--text-muted)' }}>CCI (Opcional, 20 dígitos)</label><input className="input" value={formData.cci} onChange={e => setFormData({...formData, cci: e.target.value.replace(/\D/g, '')})} minLength={20} maxLength={20} placeholder="20 números" /></div>
               </div>
               <div><label style={{ fontSize: '0.8rem', fontWeight: 'bold', color: 'var(--text-muted)' }}>Colegio</label><input required className="input" value={formData.colegio} onChange={e => setFormData({...formData, colegio: e.target.value})} /></div>
               <div style={{ display: 'flex', gap: '1rem' }}>
@@ -520,7 +573,7 @@ export default function Home() {
                 </tr>
               </thead>
               <tbody>
-                {filteredPersonas.map((p) => (
+                {filteredPersonas.map((p, index) => (
                   <tr key={p.dni} style={{ opacity: p.activo ? 1 : 0.5 }}>
                     {activeTab === 'habilitados' && (
                       <td>
@@ -531,7 +584,7 @@ export default function Home() {
                         />
                       </td>
                     )}
-                    <td>{p.item}</td>
+                    <td>{index + 1}</td>
                     <td style={{ fontWeight: 600 }}>{p.nombre}</td>
                     <td>{p.dni}</td>
                     <td>{p.colegio}</td>
@@ -565,11 +618,7 @@ export default function Home() {
 
                       {p.activo ? (
                         <button 
-                          onClick={() => {
-                            if(window.confirm('¿Desea deshabilitar esta persona?')) {
-                              togglePersonaStatus(p.dni, false);
-                            }
-                          }}
+                          onClick={() => setConfirmModal({ isOpen: true, targetId: p.dni, type: 'persona', action: 'disable' })}
                           style={{ background: 'none', border: 'none', color: 'var(--danger)', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '0.25rem', fontSize: '0.85rem', fontWeight: 'bold', padding: '0.25rem 0.5rem', borderRadius: '4px', transition: 'background 0.2s' }}
                           onMouseOver={e => e.currentTarget.style.background = 'rgba(239, 68, 68, 0.1)'}
                           onMouseOut={e => e.currentTarget.style.background = 'none'}
@@ -578,7 +627,7 @@ export default function Home() {
                         </button>
                       ) : (
                         <button 
-                          onClick={() => togglePersonaStatus(p.dni, true)}
+                          onClick={() => setConfirmModal({ isOpen: true, targetId: p.dni, type: 'persona', action: 'enable' })}
                           style={{ background: 'none', border: 'none', color: 'var(--success)', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '0.25rem', fontSize: '0.85rem', fontWeight: 'bold', padding: '0.25rem 0.5rem', borderRadius: '4px', transition: 'background 0.2s' }}
                           onMouseOver={e => e.currentTarget.style.background = 'rgba(16, 185, 129, 0.1)'}
                           onMouseOut={e => e.currentTarget.style.background = 'none'}
@@ -657,11 +706,7 @@ export default function Home() {
 
                       {b.activo ? (
                         <button 
-                          onClick={() => {
-                            if(window.confirm('¿Desea deshabilitar este banco?')) {
-                              handleToggleBanco(b.id, false);
-                            }
-                          }}
+                          onClick={() => setConfirmModal({ isOpen: true, targetId: b.id, type: 'banco', action: 'disable' })}
                           style={{ background: 'none', border: 'none', color: 'var(--danger)', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '0.25rem', fontSize: '0.85rem', fontWeight: 'bold', padding: '0.25rem 0.5rem', borderRadius: '4px', transition: 'background 0.2s' }}
                           onMouseOver={e => e.currentTarget.style.background = 'rgba(239, 68, 68, 0.1)'}
                           onMouseOut={e => e.currentTarget.style.background = 'none'}
@@ -670,7 +715,7 @@ export default function Home() {
                         </button>
                       ) : (
                         <button 
-                          onClick={() => handleToggleBanco(b.id, true)}
+                          onClick={() => setConfirmModal({ isOpen: true, targetId: b.id, type: 'banco', action: 'enable' })}
                           style={{ background: 'none', border: 'none', color: 'var(--success)', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '0.25rem', fontSize: '0.85rem', fontWeight: 'bold', padding: '0.25rem 0.5rem', borderRadius: '4px', transition: 'background 0.2s' }}
                           onMouseOver={e => e.currentTarget.style.background = 'rgba(16, 185, 129, 0.1)'}
                           onMouseOut={e => e.currentTarget.style.background = 'none'}
