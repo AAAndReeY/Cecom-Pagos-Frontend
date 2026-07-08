@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react';
 import axios from 'axios';
 import toast, { Toaster } from 'react-hot-toast';
-import { Upload, FileText, Search, LogOut, Building2, UserPlus, Download, Trash2, CheckCircle, X, Edit2, Users, Database, Landmark } from 'lucide-react';
+import { Upload, FileText, Search, LogOut, Building2, UserPlus, Download, Trash2, CheckCircle, X, Edit2, Users, Database, Landmark, Loader2 } from 'lucide-react';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3003';
 
@@ -475,6 +475,11 @@ export default function Home() {
                 </button>
               )}
 
+              <a href="/Plantilla_Datos.xlsx" download className="btn btn-outline" style={{ textDecoration: 'none', backgroundColor: '#f8fafc', color: '#475569', borderColor: '#cbd5e1' }} title="Descargar plantilla de Excel vacía">
+                <Download size={18} />
+                Descargar Plantilla
+              </a>
+
               <label className="btn btn-outline" style={{ cursor: isUploading ? 'wait' : 'pointer' }}>
                 <Upload size={18} />
                 {isUploading ? 'Procesando...' : 'Cargar Excel Base'}
@@ -716,6 +721,26 @@ export default function Home() {
                 <button type="submit" className="btn"><Landmark size={18} /> {editingBancoId ? 'Guardar Cambios' : 'Guardar Banco'}</button>
               </div>
             </form>
+          </div>
+        </div>
+      )}
+      {/* Modal Loading Generar */}
+      {isGenerating && (
+        <div style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: 'rgba(15, 23, 42, 0.85)', backdropFilter: 'blur(5px)', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', zIndex: 9999 }}>
+          <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '1.5rem', background: '#1e293b', padding: '3rem', borderRadius: '1rem', border: '1px solid #334155', boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.25)' }}>
+            <div style={{ animation: 'spin 2s linear infinite' }}>
+              <Loader2 size={64} color="var(--primary)" />
+            </div>
+            <div style={{ textAlign: 'center' }}>
+              <h2 style={{ color: 'white', fontSize: '1.5rem', fontWeight: 'bold', margin: '0 0 0.5rem 0' }}>Generando Documentos</h2>
+              <p style={{ color: 'var(--text-muted)', fontSize: '1rem', margin: 0 }}>Por favor espere, esto puede tomar unos segundos...</p>
+            </div>
+            <style>{`
+              @keyframes spin {
+                from { transform: rotate(0deg); }
+                to { transform: rotate(360deg); }
+              }
+            `}</style>
           </div>
         </div>
       )}
