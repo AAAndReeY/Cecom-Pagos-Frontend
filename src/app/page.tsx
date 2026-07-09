@@ -553,7 +553,7 @@ export default function Home() {
 
       {/* Contenido Principal */}
       <main className="main-content">
-        {activeTab !== 'bancos' && (
+        {(activeTab === 'habilitados' || activeTab === 'general') && (
         <div className="panel animate-fade">
           <div style={{ display: 'flex', justifyContent: 'space-between', flexWrap: 'wrap', gap: '1rem', marginBottom: '1.5rem' }}>
             
