@@ -20,7 +20,7 @@ export default function Home() {
   const [isGenerating, setIsGenerating] = useState(false);
 
   // Nuevos estados para CRUD y Vistas
-  const [activeTab, setActiveTab] = useState<'habilitados' | 'general' | 'bancos'>('habilitados');
+  const [activeTab, setActiveTab] = useState<'habilitados' | 'general' | 'bancos' | 'usuarios'>('habilitados');
   const [showModal, setShowModal] = useState(false);
   const [showBancoModal, setShowBancoModal] = useState(false);
   const [modalError, setModalError] = useState<string | null>(null);
@@ -30,14 +30,20 @@ export default function Home() {
     dni: '', nombre: '', ruc: '', direccion: '', banco: '', cci: '', colegio: '', anio: '', fecha_dj: ''
   });
   const [bancoData, setBancoData] = useState({ nombre: '' });
-  const [confirmModal, setConfirmModal] = useState<{isOpen: boolean, targetId: string | number | null, type: 'persona' | 'banco', action: 'enable' | 'disable'}>({ isOpen: false, targetId: null, type: 'persona', action: 'disable' });
+  const [confirmModal, setConfirmModal] = useState<{isOpen: boolean, targetId: string | number | null, type: 'persona' | 'banco' | 'usuario', action: 'enable' | 'disable'}>({ isOpen: false, targetId: null, type: 'persona', action: 'disable' });
+  const [userRol, setUserRol] = useState<string | null>(null);
+  const [usersList, setUsersList] = useState<any[]>([]);
+  const [showUserModal, setShowUserModal] = useState(false);
+  const [userData, setUserData] = useState({ username: '', password: '', rol: 'USER' });
 
   useEffect(() => {
     const savedToken = localStorage.getItem('token');
     const savedUsername = localStorage.getItem('username');
+    const savedRol = localStorage.getItem('rol');
     if (savedToken) {
       setToken(savedToken);
       if (savedUsername) setUsername(savedUsername);
+      if (savedRol) setUserRol(savedRol);
       fetchPersonas(savedToken);
       fetchBancos(savedToken);
     }
@@ -47,10 +53,12 @@ export default function Home() {
     e.preventDefault();
     try {
       const res = await axios.post(`${API_URL}/auth/login`, { username, password });
-      const { access_token } = res.data;
+      const { access_token, rol, username: loggedUsername } = res.data;
       setToken(access_token);
+      setUserRol(rol);
       localStorage.setItem('token', access_token);
-      localStorage.setItem('username', username);
+      localStorage.setItem('username', loggedUsername);
+      localStorage.setItem('rol', rol);
       toast.success('Sesión iniciada correctamente');
       fetchPersonas(access_token);
       fetchBancos(access_token);
@@ -65,7 +73,10 @@ export default function Home() {
     setPassword('');
     localStorage.removeItem('token');
     localStorage.removeItem('username');
+    localStorage.removeItem('rol');
     setPersonas([]);
+    setUsersList([]);
+    setUserRol(null);
   };
 
   const fetchPersonas = async (authToken: string) => {
@@ -285,8 +296,46 @@ export default function Home() {
       await togglePersonaStatus(targetId as string, isEnable);
     } else if (type === 'banco') {
       await handleToggleBanco(targetId as number, isEnable);
+    } else if (type === 'usuario') {
+      await toggleUserStatus(targetId as number, isEnable);
     }
     setConfirmModal({ isOpen: false, targetId: null, type: 'persona', action: 'disable' });
+  };
+
+  const fetchUsers = async (authToken: string) => {
+    try {
+      const res = await axios.get(`${API_URL}/users`, { headers: { Authorization: `Bearer ${authToken}` } });
+      setUsersList(res.data);
+    } catch (error) { console.error(error); }
+  };
+
+  useEffect(() => {
+    if (activeTab === 'usuarios' && token && userRol === 'ADMIN') {
+      fetchUsers(token);
+    }
+  }, [activeTab]);
+
+  const handleSaveUser = async (e: React.FormEvent) => {
+    e.preventDefault();
+    try {
+      await axios.post(`${API_URL}/users`, userData, { headers: { Authorization: `Bearer ${token}` } });
+      toast.success('Usuario creado');
+      fetchUsers(token!);
+      setShowUserModal(false);
+      setUserData({ username: '', password: '', rol: 'USER' });
+      setModalError(null);
+    } catch (error: any) {
+      const apiMessage = error.response?.data?.message;
+      setModalError(typeof apiMessage === 'string' ? apiMessage : 'Error al crear usuario');
+    }
+  };
+
+  const toggleUserStatus = async (id: number, activo: boolean) => {
+    try {
+      await axios.patch(`${API_URL}/users/${id}/status`, { activo }, { headers: { Authorization: `Bearer ${token}` } });
+      toast.success('Estado del usuario actualizado');
+      fetchUsers(token!);
+    } catch (error) { toast.error('Error al actualizar estado'); }
   };
 
   const toggleSelection = (dni: string) => {
@@ -359,7 +408,7 @@ export default function Home() {
               {confirmModal.action === 'disable' ? <Trash2 size={48} style={{ margin: '0 auto' }} /> : <CheckCircle size={48} style={{ margin: '0 auto' }} />}
             </div>
             <h3 style={{ fontSize: '1.25rem', fontWeight: 'bold', marginBottom: '1rem', color: 'var(--text-main)' }}>
-              ¿Desea {confirmModal.action === 'enable' ? 'habilitar' : 'deshabilitar'} {confirmModal.type === 'persona' ? 'esta persona' : 'este banco'}?
+              ¿Desea {confirmModal.action === 'enable' ? 'habilitar' : 'deshabilitar'} {confirmModal.type === 'persona' ? 'esta persona' : confirmModal.type === 'banco' ? 'este banco' : 'este usuario'}?
             </h3>
             <p style={{ color: 'var(--text-muted)', marginBottom: '2rem', fontSize: '0.9rem' }}>
               {confirmModal.action === 'enable' 
@@ -459,6 +508,14 @@ export default function Home() {
           >
             <Landmark size={18} /> Gestión de Bancos
           </button>
+          {userRol === 'ADMIN' && (
+            <button 
+              className={`sidebar-item ${activeTab === 'usuarios' ? 'active' : ''}`}
+              onClick={() => { setActiveTab('usuarios'); setSelectedDnis(new Set()); }}
+            >
+              <Users size={18} /> Gestión de Usuarios
+            </button>
+          )}
         </nav>
         
         <div className="sidebar-footer" style={{ padding: '1rem' }}>
@@ -739,6 +796,89 @@ export default function Home() {
           </div>
         </div>
         )}
+
+        {/* Panel de Usuarios */}
+        {activeTab === 'usuarios' && userRol === 'ADMIN' && (
+        <div className="panel animate-fade">
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '2rem' }}>
+            <h2 className="panel-title" style={{ margin: 0 }}>Gestión de Usuarios (Acceso al Sistema)</h2>
+            <button className="btn" onClick={() => setShowUserModal(true)}>
+              <UserPlus size={18} /> Nuevo Usuario
+            </button>
+          </div>
+
+          <div className="table-container">
+            <table>
+              <thead>
+                <tr>
+                  <th>ID</th>
+                  <th>Nombre de Usuario</th>
+                  <th>Rol</th>
+                  <th>Estado</th>
+                  <th>Fecha de Creación</th>
+                  <th>Acciones</th>
+                </tr>
+              </thead>
+              <tbody>
+                {usersList.map((u, index) => (
+                  <tr key={u.id} style={{ opacity: u.activo ? 1 : 0.5 }}>
+                    <td>{index + 1}</td>
+                    <td style={{ fontWeight: 600 }}>{u.username}</td>
+                    <td>
+                      <span style={{ 
+                        padding: '4px 8px', borderRadius: '4px', fontSize: '0.8rem', fontWeight: 'bold',
+                        backgroundColor: u.rol === 'ADMIN' ? '#e0e7ff' : '#f1f5f9',
+                        color: u.rol === 'ADMIN' ? '#4f46e5' : '#475569'
+                      }}>
+                        {u.rol}
+                      </span>
+                    </td>
+                    <td>
+                      <span style={{ 
+                        padding: '4px 8px', borderRadius: '4px', fontSize: '0.8rem', fontWeight: 'bold',
+                        backgroundColor: u.activo ? '#e8f5e9' : '#ffebee',
+                        color: u.activo ? '#2e7d32' : '#c62828'
+                      }}>
+                        {u.activo ? 'Activo' : 'Inactivo'}
+                      </span>
+                    </td>
+                    <td>{new Date(u.createdAt).toLocaleDateString()}</td>
+                    <td style={{ display: 'flex', gap: '0.75rem', alignItems: 'center' }}>
+                      {u.activo ? (
+                        <button 
+                          onClick={() => setConfirmModal({ isOpen: true, targetId: u.id, type: 'usuario', action: 'disable' })}
+                          style={{ background: 'none', border: 'none', color: 'var(--danger)', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '0.25rem', fontSize: '0.85rem', fontWeight: 'bold', padding: '0.25rem 0.5rem', borderRadius: '4px', transition: 'background 0.2s' }}
+                          onMouseOver={e => e.currentTarget.style.background = 'rgba(239, 68, 68, 0.1)'}
+                          onMouseOut={e => e.currentTarget.style.background = 'none'}
+                        >
+                          <Trash2 size={16} /> Deshabilitar
+                        </button>
+                      ) : (
+                        <button 
+                          onClick={() => setConfirmModal({ isOpen: true, targetId: u.id, type: 'usuario', action: 'enable' })}
+                          style={{ background: 'none', border: 'none', color: 'var(--success)', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '0.25rem', fontSize: '0.85rem', fontWeight: 'bold', padding: '0.25rem 0.5rem', borderRadius: '4px', transition: 'background 0.2s' }}
+                          onMouseOver={e => e.currentTarget.style.background = 'rgba(16, 185, 129, 0.1)'}
+                          onMouseOut={e => e.currentTarget.style.background = 'none'}
+                        >
+                          <CheckCircle size={16} /> Habilitar
+                        </button>
+                      )}
+                    </td>
+                  </tr>
+                ))}
+                {usersList.length === 0 && (
+                  <tr>
+                    <td colSpan={6} style={{ textAlign: 'center', padding: '3rem', color: 'var(--text-muted)' }}>
+                      <Users size={48} style={{ opacity: 0.2, margin: '0 auto 1rem auto', display: 'block' }} />
+                      No hay usuarios registrados.
+                    </td>
+                  </tr>
+                )}
+              </tbody>
+            </table>
+          </div>
+        </div>
+        )}
       </main>
 
       {/* Modal Bancos */}
@@ -764,6 +904,46 @@ export default function Home() {
               <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '1rem', marginTop: '1rem' }}>
                 <button type="button" className="btn btn-outline" onClick={() => { setShowBancoModal(false); setEditingBancoId(null); setBancoData({ nombre: '' }); setModalError(null); }}>Cancelar</button>
                 <button type="submit" className="btn"><Landmark size={18} /> {editingBancoId ? 'Guardar Cambios' : 'Guardar Banco'}</button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* Modal Usuarios */}
+      {showUserModal && (
+        <div style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: 'rgba(15, 23, 42, 0.75)', backdropFilter: 'blur(4px)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000 }}>
+          <div className="panel animate-fade" style={{ width: '90%', maxWidth: '400px' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem' }}>
+              <h3 style={{ fontSize: '1.25rem', fontWeight: 'bold' }}>Agregar Usuario</h3>
+              <button onClick={() => { setShowUserModal(false); setUserData({ username: '', password: '', rol: 'USER' }); setModalError(null); }} style={{ background: 'none', border: 'none', cursor: 'pointer' }}><X size={24} color="#666" /></button>
+            </div>
+
+            {modalError && (
+              <div style={{ background: '#fee2e2', color: '#991b1b', padding: '0.75rem', borderRadius: '0.5rem', marginBottom: '1rem', border: '1px solid #f87171', fontSize: '0.9rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                <span style={{ fontWeight: 'bold' }}>⚠️ Error:</span> {modalError}
+              </div>
+            )}
+
+            <form onSubmit={handleSaveUser} style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+              <div>
+                <label style={{ fontSize: '0.8rem', fontWeight: 'bold', color: 'var(--text-muted)' }}>Nombre de Usuario (Login)</label>
+                <input required className="input" value={userData.username} onChange={e => setUserData({ ...userData, username: e.target.value })} placeholder="ej: jperez" />
+              </div>
+              <div>
+                <label style={{ fontSize: '0.8rem', fontWeight: 'bold', color: 'var(--text-muted)' }}>Contraseña</label>
+                <input required type="password" className="input" value={userData.password} onChange={e => setUserData({ ...userData, password: e.target.value })} placeholder="Min. 4 caracteres" />
+              </div>
+              <div>
+                <label style={{ fontSize: '0.8rem', fontWeight: 'bold', color: 'var(--text-muted)' }}>Rol en el sistema</label>
+                <select required className="input" value={userData.rol} onChange={e => setUserData({ ...userData, rol: e.target.value })}>
+                  <option value="USER">USER (Solo lectura y subidas de Excel)</option>
+                  <option value="ADMIN">ADMIN (Control total)</option>
+                </select>
+              </div>
+              <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '1rem', marginTop: '1rem' }}>
+                <button type="button" className="btn btn-outline" onClick={() => { setShowUserModal(false); setUserData({ username: '', password: '', rol: 'USER' }); setModalError(null); }}>Cancelar</button>
+                <button type="submit" className="btn"><UserPlus size={18} /> Guardar Usuario</button>
               </div>
             </form>
           </div>
