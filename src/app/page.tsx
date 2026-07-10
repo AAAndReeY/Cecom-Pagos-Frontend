@@ -688,7 +688,7 @@ export default function Home() {
                         </span>
                       </td>
                     )}
-                    <td style={{ display: 'flex', gap: '0.75rem', alignItems: 'center', height: '100%' }}>
+                    <td style={{ display: 'flex', gap: '0.5rem', alignItems: 'center', height: '100%', minWidth: '280px' }}>
                       <button 
                         onClick={() => {
                           setEditingDni(p.dni);
@@ -698,7 +698,7 @@ export default function Home() {
                           });
                           setShowModal(true);
                         }}
-                        style={{ background: 'none', border: 'none', color: 'var(--secondary)', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '0.25rem', fontSize: '0.85rem', fontWeight: 'bold', padding: '0.25rem 0.5rem', borderRadius: '4px', transition: 'background 0.2s' }}
+                        style={{ width: '80px', justifyContent: 'center', background: 'none', border: 'none', color: 'var(--secondary)', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '0.25rem', fontSize: '0.85rem', fontWeight: 'bold', padding: '0.25rem 0.5rem', borderRadius: '4px', transition: 'background 0.2s' }}
                         onMouseOver={e => e.currentTarget.style.background = 'rgba(59, 130, 246, 0.1)'}
                         onMouseOut={e => e.currentTarget.style.background = 'none'}
                       >
@@ -708,7 +708,7 @@ export default function Home() {
                       {p.activo ? (
                         <button 
                           onClick={() => setConfirmModal({ isOpen: true, targetId: p.dni, type: 'persona', action: 'disable' })}
-                          style={{ background: 'none', border: 'none', color: 'var(--danger)', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '0.25rem', fontSize: '0.85rem', fontWeight: 'bold', padding: '0.25rem 0.5rem', borderRadius: '4px', transition: 'background 0.2s' }}
+                          style={{ width: '110px', justifyContent: 'center', background: 'none', border: 'none', color: 'var(--danger)', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '0.25rem', fontSize: '0.85rem', fontWeight: 'bold', padding: '0.25rem 0.5rem', borderRadius: '4px', transition: 'background 0.2s' }}
                           onMouseOver={e => e.currentTarget.style.background = 'rgba(239, 68, 68, 0.1)'}
                           onMouseOut={e => e.currentTarget.style.background = 'none'}
                         >
@@ -717,7 +717,7 @@ export default function Home() {
                       ) : (
                         <button 
                           onClick={() => setConfirmModal({ isOpen: true, targetId: p.dni, type: 'persona', action: 'enable' })}
-                          style={{ background: 'none', border: 'none', color: 'var(--success)', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '0.25rem', fontSize: '0.85rem', fontWeight: 'bold', padding: '0.25rem 0.5rem', borderRadius: '4px', transition: 'background 0.2s' }}
+                          style={{ width: '110px', justifyContent: 'center', background: 'none', border: 'none', color: 'var(--success)', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '0.25rem', fontSize: '0.85rem', fontWeight: 'bold', padding: '0.25rem 0.5rem', borderRadius: '4px', transition: 'background 0.2s' }}
                           onMouseOver={e => e.currentTarget.style.background = 'rgba(16, 185, 129, 0.1)'}
                           onMouseOut={e => e.currentTarget.style.background = 'none'}
                         >
@@ -727,7 +727,7 @@ export default function Home() {
                       
                       <button 
                         onClick={() => setConfirmModal({ isOpen: true, targetId: p.dni, type: 'persona', action: 'delete' })}
-                        style={{ background: 'none', border: 'none', color: '#991b1b', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '0.25rem', fontSize: '0.85rem', fontWeight: 'bold', padding: '0.25rem 0.5rem', borderRadius: '4px', transition: 'background 0.2s', marginLeft: '0.25rem' }}
+                        style={{ width: '90px', justifyContent: 'center', background: 'none', border: 'none', color: '#991b1b', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '0.25rem', fontSize: '0.85rem', fontWeight: 'bold', padding: '0.25rem 0.5rem', borderRadius: '4px', transition: 'background 0.2s' }}
                         onMouseOver={e => e.currentTarget.style.background = 'rgba(153, 27, 27, 0.1)'}
                         onMouseOut={e => e.currentTarget.style.background = 'none'}
                         title="Eliminar del sistema"
