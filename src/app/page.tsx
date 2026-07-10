@@ -220,7 +220,7 @@ export default function Home() {
       await fetchPersonas(token!);
       setShowModal(false);
       setEditingDni(null);
-      setFormData({ dni: '', nombre: '', ruc: '', direccion: '', banco: '', cci: '', colegio: '', anio: '', fecha_dj: '' });
+      setFormData({ dni: '', nombre: '', ruc: '', direccion: '', banco: '', cci: '', colegio: '', anio: '' });
       setModalError(null);
     } catch (error: any) {
       console.error(error);
