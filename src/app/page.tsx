@@ -30,11 +30,12 @@ export default function Home() {
     dni: '', nombre: '', ruc: '', direccion: '', banco: '', cci: '', colegio: '', anio: '', fecha_dj: ''
   });
   const [bancoData, setBancoData] = useState({ nombre: '' });
-  const [confirmModal, setConfirmModal] = useState<{isOpen: boolean, targetId: string | number | null, type: 'persona' | 'banco' | 'usuario', action: 'enable' | 'disable'}>({ isOpen: false, targetId: null, type: 'persona', action: 'disable' });
+  const [confirmModal, setConfirmModal] = useState<{isOpen: boolean, targetId: string | number | null, type: 'persona' | 'banco' | 'usuario', action: 'enable' | 'disable' | 'delete'}>({ isOpen: false, targetId: null, type: 'persona', action: 'disable' });
+  const [estadoFiltro, setEstadoFiltro] = useState<'TODOS' | 'ACTIVO' | 'INACTIVO'>('TODOS');
   const [userRol, setUserRol] = useState<string | null>(null);
   const [usersList, setUsersList] = useState<any[]>([]);
   const [showUserModal, setShowUserModal] = useState(false);
-  const [userData, setUserData] = useState({ username: '', password: '', rol: 'USER' });
+  const [userData, setUserData] = useState({ username: '', password: '', rol: 'USER', dni: '', nombre: '', apellido: '' });
 
   useEffect(() => {
     const savedToken = localStorage.getItem('token');
@@ -293,7 +294,18 @@ export default function Home() {
     const isEnable = action === 'enable';
     
     if (type === 'persona') {
-      await togglePersonaStatus(targetId as string, isEnable);
+      if (action === 'delete') {
+        toast.loading('Eliminando...', { id: 'delete' });
+        try {
+          await axios.delete(`${API_URL}/pagos/persona/${targetId}`, { headers: { Authorization: `Bearer ${token}` } });
+          toast.success('Persona eliminada', { id: 'delete' });
+          fetchPersonas(token!);
+        } catch (error) {
+          toast.error('Error al eliminar', { id: 'delete' });
+        }
+      } else {
+        await togglePersonaStatus(targetId as string, isEnable);
+      }
     } else if (type === 'banco') {
       await handleToggleBanco(targetId as number, isEnable);
     } else if (type === 'usuario') {
@@ -351,6 +363,8 @@ export default function Home() {
   // Filtrado principal por estado y busqueda
   const filteredPersonas = personas.filter(p => {
     if (activeTab === 'habilitados' && !p.activo) return false;
+    if (activeTab === 'general' && estadoFiltro === 'ACTIVO' && !p.activo) return false;
+    if (activeTab === 'general' && estadoFiltro === 'INACTIVO' && p.activo) return false;
     
     const search = searchTerm.toLowerCase();
     return p.nombre.toLowerCase().includes(search) || p.dni.includes(search);
@@ -408,12 +422,14 @@ export default function Home() {
               {confirmModal.action === 'disable' ? <Trash2 size={48} style={{ margin: '0 auto' }} /> : <CheckCircle size={48} style={{ margin: '0 auto' }} />}
             </div>
             <h3 style={{ fontSize: '1.25rem', fontWeight: 'bold', marginBottom: '1rem', color: 'var(--text-main)' }}>
-              ¿Desea {confirmModal.action === 'enable' ? 'habilitar' : 'deshabilitar'} {confirmModal.type === 'persona' ? 'esta persona' : confirmModal.type === 'banco' ? 'este banco' : 'este usuario'}?
+              {confirmModal.action === 'delete' ? '¿Desea eliminar definitivamente a esta persona?' : `¿Desea ${confirmModal.action === 'enable' ? 'habilitar' : 'deshabilitar'} ${confirmModal.type === 'persona' ? 'esta persona' : confirmModal.type === 'banco' ? 'este banco' : 'este usuario'}?`}
             </h3>
             <p style={{ color: 'var(--text-muted)', marginBottom: '2rem', fontSize: '0.9rem' }}>
-              {confirmModal.action === 'enable' 
-                ? 'El registro volverá a estar disponible y visible en las listas activas.' 
-                : 'El registro dejará de estar disponible y se ocultará de las listas activas.'}
+              {confirmModal.action === 'delete' 
+                ? 'El registro será eliminado y dejará de estar disponible en todo el sistema.' 
+                : confirmModal.action === 'enable' 
+                  ? 'El registro volverá a estar disponible y visible en las listas activas.' 
+                  : 'El registro dejará de estar disponible y se ocultará de las listas activas.'}
             </p>
             <div style={{ display: 'flex', justifyContent: 'center', gap: '1rem' }}>
               <button 
@@ -424,10 +440,10 @@ export default function Home() {
               </button>
               <button 
                 className="btn" 
-                style={{ backgroundColor: confirmModal.action === 'disable' ? 'var(--danger)' : 'var(--success)', border: 'none', color: '#fff' }}
+                style={{ backgroundColor: confirmModal.action === 'disable' || confirmModal.action === 'delete' ? 'var(--danger)' : 'var(--success)', border: 'none', color: '#fff' }}
                 onClick={executeConfirm}
               >
-                Sí, {confirmModal.action === 'enable' ? 'Habilitar' : 'Deshabilitar'}
+                Sí, {confirmModal.action === 'delete' ? 'Eliminar' : confirmModal.action === 'enable' ? 'Habilitar' : 'Deshabilitar'}
               </button>
             </div>
           </div>
@@ -502,12 +518,14 @@ export default function Home() {
           >
             <Database size={18} /> Lista General
           </button>
-          <button 
-            className={`sidebar-item ${activeTab === 'bancos' ? 'active' : ''}`}
-            onClick={() => { setActiveTab('bancos'); setSelectedDnis(new Set()); }}
-          >
-            <Landmark size={18} /> Gestión de Bancos
-          </button>
+          {userRol === 'ADMIN' && (
+            <button 
+              className={`sidebar-item ${activeTab === 'bancos' ? 'active' : ''}`}
+              onClick={() => { setActiveTab('bancos'); setSelectedDnis(new Set()); }}
+            >
+              <Landmark size={18} /> Gestión de Bancos
+            </button>
+          )}
           {userRol === 'ADMIN' && (
             <button 
               className={`sidebar-item ${activeTab === 'usuarios' ? 'active' : ''}`}
@@ -557,15 +575,29 @@ export default function Home() {
         <div className="panel animate-fade">
           <div style={{ display: 'flex', justifyContent: 'space-between', flexWrap: 'wrap', gap: '1rem', marginBottom: '1.5rem' }}>
             
-            <div style={{ position: 'relative', flex: 1, minWidth: '250px' }}>
-              <Search size={18} style={{ position: 'absolute', left: '1rem', top: '50%', transform: 'translateY(-50%)', color: 'var(--text-muted)' }} />
-              <input 
-                className="input" 
-                style={{ paddingLeft: '2.5rem' }} 
-                placeholder="Buscar por DNI o Nombre..." 
-                value={searchTerm}
-                onChange={e => setSearchTerm(e.target.value)}
-              />
+            <div style={{ display: 'flex', gap: '1rem', flex: 1, minWidth: '300px' }}>
+              <div style={{ position: 'relative', flex: 2 }}>
+                <Search size={18} style={{ position: 'absolute', left: '1rem', top: '50%', transform: 'translateY(-50%)', color: 'var(--text-muted)' }} />
+                <input 
+                  className="input" 
+                  style={{ paddingLeft: '2.5rem', width: '100%' }} 
+                  placeholder="Buscar por DNI o Nombre..." 
+                  value={searchTerm}
+                  onChange={e => setSearchTerm(e.target.value)}
+                />
+              </div>
+              {activeTab === 'general' && (
+                <select 
+                  className="input" 
+                  style={{ flex: 1, minWidth: '150px' }}
+                  value={estadoFiltro} 
+                  onChange={e => setEstadoFiltro(e.target.value as any)}
+                >
+                  <option value="TODOS">Todos los estados</option>
+                  <option value="ACTIVO">Activos</option>
+                  <option value="INACTIVO">Inactivos</option>
+                </select>
+              )}
             </div>
 
             <div style={{ display: 'flex', gap: '1rem', flexWrap: 'wrap' }}>
@@ -692,6 +724,16 @@ export default function Home() {
                           <CheckCircle size={16} /> Habilitar
                         </button>
                       )}
+                      
+                      <button 
+                        onClick={() => setConfirmModal({ isOpen: true, targetId: p.dni, type: 'persona', action: 'delete' })}
+                        style={{ background: 'none', border: 'none', color: '#991b1b', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '0.25rem', fontSize: '0.85rem', fontWeight: 'bold', padding: '0.25rem 0.5rem', borderRadius: '4px', transition: 'background 0.2s', marginLeft: '0.25rem' }}
+                        onMouseOver={e => e.currentTarget.style.background = 'rgba(153, 27, 27, 0.1)'}
+                        onMouseOut={e => e.currentTarget.style.background = 'none'}
+                        title="Eliminar del sistema"
+                      >
+                        <Trash2 size={16} /> Eliminar
+                      </button>
                     </td>
                   </tr>
                 ))}
@@ -812,7 +854,9 @@ export default function Home() {
               <thead>
                 <tr>
                   <th>ID</th>
-                  <th>Nombre de Usuario</th>
+                  <th>Nombre de Usuario (Login)</th>
+                  <th>DNI</th>
+                  <th>Nombres Completos</th>
                   <th>Rol</th>
                   <th>Estado</th>
                   <th>Fecha de Creación</th>
@@ -824,6 +868,8 @@ export default function Home() {
                   <tr key={u.id} style={{ opacity: u.activo ? 1 : 0.5 }}>
                     <td>{index + 1}</td>
                     <td style={{ fontWeight: 600 }}>{u.username}</td>
+                    <td>{u.dni}</td>
+                    <td>{u.nombre} {u.apellido}</td>
                     <td>
                       <span style={{ 
                         padding: '4px 8px', borderRadius: '4px', fontSize: '0.8rem', fontWeight: 'bold',
@@ -916,7 +962,7 @@ export default function Home() {
           <div className="panel animate-fade" style={{ width: '90%', maxWidth: '400px' }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem' }}>
               <h3 style={{ fontSize: '1.25rem', fontWeight: 'bold' }}>Agregar Usuario</h3>
-              <button onClick={() => { setShowUserModal(false); setUserData({ username: '', password: '', rol: 'USER' }); setModalError(null); }} style={{ background: 'none', border: 'none', cursor: 'pointer' }}><X size={24} color="#666" /></button>
+              <button onClick={() => { setShowUserModal(false); setUserData({ username: '', password: '', rol: 'USER', dni: '', nombre: '', apellido: '' }); setModalError(null); }} style={{ background: 'none', border: 'none', cursor: 'pointer' }}><X size={24} color="#666" /></button>
             </div>
 
             {modalError && (
@@ -926,9 +972,25 @@ export default function Home() {
             )}
 
             <form onSubmit={handleSaveUser} style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
-              <div>
-                <label style={{ fontSize: '0.8rem', fontWeight: 'bold', color: 'var(--text-muted)' }}>Nombre de Usuario (Login)</label>
-                <input required className="input" value={userData.username} onChange={e => setUserData({ ...userData, username: e.target.value })} placeholder="ej: jperez" />
+              <div style={{ display: 'flex', gap: '1rem' }}>
+                <div style={{ flex: 1 }}>
+                  <label style={{ fontSize: '0.8rem', fontWeight: 'bold', color: 'var(--text-muted)' }}>DNI</label>
+                  <input required className="input" value={userData.dni} onChange={e => setUserData({ ...userData, dni: e.target.value.replace(/\D/g, '') })} minLength={8} maxLength={8} placeholder="8 números" />
+                </div>
+                <div style={{ flex: 1 }}>
+                  <label style={{ fontSize: '0.8rem', fontWeight: 'bold', color: 'var(--text-muted)' }}>Nombre de Usuario (Login)</label>
+                  <input required className="input" value={userData.username} onChange={e => setUserData({ ...userData, username: e.target.value })} placeholder="ej: jperez" />
+                </div>
+              </div>
+              <div style={{ display: 'flex', gap: '1rem' }}>
+                <div style={{ flex: 1 }}>
+                  <label style={{ fontSize: '0.8rem', fontWeight: 'bold', color: 'var(--text-muted)' }}>Nombres</label>
+                  <input required className="input" value={userData.nombre} onChange={e => setUserData({ ...userData, nombre: e.target.value.toUpperCase() })} placeholder="Ej: JUAN PABLO" />
+                </div>
+                <div style={{ flex: 1 }}>
+                  <label style={{ fontSize: '0.8rem', fontWeight: 'bold', color: 'var(--text-muted)' }}>Apellidos</label>
+                  <input required className="input" value={userData.apellido} onChange={e => setUserData({ ...userData, apellido: e.target.value.toUpperCase() })} placeholder="Ej: PEREZ QUISPE" />
+                </div>
               </div>
               <div>
                 <label style={{ fontSize: '0.8rem', fontWeight: 'bold', color: 'var(--text-muted)' }}>Contraseña</label>
@@ -942,7 +1004,7 @@ export default function Home() {
                 </select>
               </div>
               <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '1rem', marginTop: '1rem' }}>
-                <button type="button" className="btn btn-outline" onClick={() => { setShowUserModal(false); setUserData({ username: '', password: '', rol: 'USER' }); setModalError(null); }}>Cancelar</button>
+                <button type="button" className="btn btn-outline" onClick={() => { setShowUserModal(false); setUserData({ username: '', password: '', rol: 'USER', dni: '', nombre: '', apellido: '' }); setModalError(null); }}>Cancelar</button>
                 <button type="submit" className="btn"><UserPlus size={18} /> Guardar Usuario</button>
               </div>
             </form>
