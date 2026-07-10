@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react';
 import axios from 'axios';
 import toast, { Toaster } from 'react-hot-toast';
-import { Upload, FileText, Search, LogOut, Building2, UserPlus, Download, Trash2, CheckCircle, X, Edit2, Users, Database, Landmark, Loader2 } from 'lucide-react';
+import { Upload, FileText, Search, LogOut, Building2, UserPlus, Download, Trash2, CheckCircle, X, Edit2, Users, Database, Landmark, Loader2, Eye, EyeOff } from 'lucide-react';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3003';
 
@@ -36,6 +36,8 @@ export default function Home() {
   const [usersList, setUsersList] = useState<any[]>([]);
   const [showUserModal, setShowUserModal] = useState(false);
   const [userData, setUserData] = useState({ username: '', password: '', rol: 'USER', dni: '', nombre: '', apellido: '' });
+  const [editingUserId, setEditingUserId] = useState<number | null>(null);
+  const [showPassword, setShowPassword] = useState(false);
 
   useEffect(() => {
     const savedToken = localStorage.getItem('token');
@@ -330,10 +332,16 @@ export default function Home() {
   const handleSaveUser = async (e: React.FormEvent) => {
     e.preventDefault();
     try {
-      await axios.post(`${API_URL}/users`, userData, { headers: { Authorization: `Bearer ${token}` } });
-      toast.success('Usuario creado');
+      if (editingUserId) {
+        await axios.patch(`${API_URL}/users/${editingUserId}`, userData, { headers: { Authorization: `Bearer ${token}` } });
+        toast.success('Usuario actualizado');
+      } else {
+        await axios.post(`${API_URL}/users`, userData, { headers: { Authorization: `Bearer ${token}` } });
+        toast.success('Usuario creado');
+      }
       fetchUsers(token!);
       setShowUserModal(false);
+      setEditingUserId(null);
       setUserData({ username: '', password: '', rol: 'USER', dni: '', nombre: '', apellido: '' });
       setModalError(null);
     } catch (error: any) {
@@ -890,6 +898,26 @@ export default function Home() {
                     </td>
                     <td>{new Date(u.createdAt).toLocaleDateString()}</td>
                     <td style={{ display: 'flex', gap: '0.75rem', alignItems: 'center' }}>
+                      <button 
+                        onClick={() => {
+                          setEditingUserId(u.id);
+                          setUserData({ 
+                            username: u.username, 
+                            password: '', // Dejamos en blanco por defecto al editar
+                            rol: u.rol, 
+                            dni: u.dni || '', 
+                            nombre: u.nombre || '', 
+                            apellido: u.apellido || '' 
+                          });
+                          setShowUserModal(true);
+                        }}
+                        style={{ background: 'none', border: 'none', color: 'var(--secondary)', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '0.25rem', fontSize: '0.85rem', fontWeight: 'bold', padding: '0.25rem 0.5rem', borderRadius: '4px', transition: 'background 0.2s' }}
+                        onMouseOver={e => e.currentTarget.style.background = 'rgba(59, 130, 246, 0.1)'}
+                        onMouseOut={e => e.currentTarget.style.background = 'none'}
+                      >
+                        <Edit2 size={16} /> Editar
+                      </button>
+
                       {u.activo ? (
                         <button 
                           onClick={() => setConfirmModal({ isOpen: true, targetId: u.id, type: 'usuario', action: 'disable' })}
@@ -961,8 +989,8 @@ export default function Home() {
         <div style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: 'rgba(15, 23, 42, 0.75)', backdropFilter: 'blur(4px)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000 }}>
           <div className="panel animate-fade" style={{ width: '90%', maxWidth: '600px' }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem' }}>
-              <h3 style={{ fontSize: '1.25rem', fontWeight: 'bold' }}>Agregar Usuario</h3>
-              <button onClick={() => { setShowUserModal(false); setUserData({ username: '', password: '', rol: 'USER', dni: '', nombre: '', apellido: '' }); setModalError(null); }} style={{ background: 'none', border: 'none', cursor: 'pointer' }}><X size={24} color="#666" /></button>
+              <h3 style={{ fontSize: '1.25rem', fontWeight: 'bold' }}>{editingUserId ? 'Editar Usuario' : 'Agregar Usuario'}</h3>
+              <button onClick={() => { setShowUserModal(false); setEditingUserId(null); setUserData({ username: '', password: '', rol: 'USER', dni: '', nombre: '', apellido: '' }); setModalError(null); }} style={{ background: 'none', border: 'none', cursor: 'pointer' }}><X size={24} color="#666" /></button>
             </div>
 
             {modalError && (
@@ -993,8 +1021,28 @@ export default function Home() {
                 </div>
               </div>
               <div>
-                <label style={{ fontSize: '0.8rem', fontWeight: 'bold', color: 'var(--text-muted)' }}>Contraseña</label>
-                <input required type="password" className="input" value={userData.password} onChange={e => setUserData({ ...userData, password: e.target.value })} pattern="(?=.*[!@#$%^&*]).{4,}" title="Debe tener al menos 4 caracteres y 1 carácter especial (!@#$%^&*)" placeholder="Min. 4 caracteres y 1 especial (!@#$)" />
+                <label style={{ fontSize: '0.8rem', fontWeight: 'bold', color: 'var(--text-muted)' }}>Contraseña {editingUserId && '(Opcional: dejar en blanco para no cambiar)'}</label>
+                <div style={{ position: 'relative' }}>
+                  <input 
+                    required={!editingUserId} 
+                    type={showPassword ? 'text' : 'password'} 
+                    className="input" 
+                    style={{ paddingRight: '2.5rem', width: '100%' }}
+                    value={userData.password} 
+                    onChange={e => setUserData({ ...userData, password: e.target.value })} 
+                    pattern={userData.password || !editingUserId ? "(?=.*[!@#$%^&*]).{4,}" : undefined} 
+                    title="Debe tener al menos 4 caracteres y 1 carácter especial (!@#$%^&*)" 
+                    placeholder="Min. 4 caracteres y 1 especial (!@#$)" 
+                  />
+                  <button 
+                    type="button" 
+                    onClick={() => setShowPassword(!showPassword)}
+                    style={{ position: 'absolute', right: '0.75rem', top: '50%', transform: 'translateY(-50%)', background: 'none', border: 'none', cursor: 'pointer', color: 'var(--text-muted)' }}
+                    title={showPassword ? "Ocultar contraseña" : "Ver contraseña"}
+                  >
+                    {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+                  </button>
+                </div>
               </div>
               <div>
                 <label style={{ fontSize: '0.8rem', fontWeight: 'bold', color: 'var(--text-muted)' }}>Rol en el sistema</label>
@@ -1004,8 +1052,8 @@ export default function Home() {
                 </select>
               </div>
               <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '1rem', marginTop: '1rem' }}>
-                <button type="button" className="btn btn-outline" onClick={() => { setShowUserModal(false); setUserData({ username: '', password: '', rol: 'USER', dni: '', nombre: '', apellido: '' }); setModalError(null); }}>Cancelar</button>
-                <button type="submit" className="btn"><UserPlus size={18} /> Guardar Usuario</button>
+                <button type="button" className="btn btn-outline" onClick={() => { setShowUserModal(false); setEditingUserId(null); setUserData({ username: '', password: '', rol: 'USER', dni: '', nombre: '', apellido: '' }); setModalError(null); }}>Cancelar</button>
+                <button type="submit" className="btn"><UserPlus size={18} /> {editingUserId ? 'Guardar Cambios' : 'Guardar Usuario'}</button>
               </div>
             </form>
           </div>
