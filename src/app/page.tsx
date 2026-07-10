@@ -959,7 +959,7 @@ export default function Home() {
       {/* Modal Usuarios */}
       {showUserModal && (
         <div style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: 'rgba(15, 23, 42, 0.75)', backdropFilter: 'blur(4px)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000 }}>
-          <div className="panel animate-fade" style={{ width: '90%', maxWidth: '400px' }}>
+          <div className="panel animate-fade" style={{ width: '90%', maxWidth: '600px' }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem' }}>
               <h3 style={{ fontSize: '1.25rem', fontWeight: 'bold' }}>Agregar Usuario</h3>
               <button onClick={() => { setShowUserModal(false); setUserData({ username: '', password: '', rol: 'USER', dni: '', nombre: '', apellido: '' }); setModalError(null); }} style={{ background: 'none', border: 'none', cursor: 'pointer' }}><X size={24} color="#666" /></button>
@@ -994,7 +994,7 @@ export default function Home() {
               </div>
               <div>
                 <label style={{ fontSize: '0.8rem', fontWeight: 'bold', color: 'var(--text-muted)' }}>Contraseña</label>
-                <input required type="password" className="input" value={userData.password} onChange={e => setUserData({ ...userData, password: e.target.value })} placeholder="Min. 4 caracteres" />
+                <input required type="password" className="input" value={userData.password} onChange={e => setUserData({ ...userData, password: e.target.value })} pattern="(?=.*[!@#$%^&*]).{4,}" title="Debe tener al menos 4 caracteres y 1 carácter especial (!@#$%^&*)" placeholder="Min. 4 caracteres y 1 especial (!@#$)" />
               </div>
               <div>
                 <label style={{ fontSize: '0.8rem', fontWeight: 'bold', color: 'var(--text-muted)' }}>Rol en el sistema</label>
