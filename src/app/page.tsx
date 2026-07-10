@@ -27,7 +27,7 @@ export default function Home() {
   const [editingDni, setEditingDni] = useState<string | null>(null);
   const [editingBancoId, setEditingBancoId] = useState<number | null>(null);
   const [formData, setFormData] = useState({
-    dni: '', nombre: '', ruc: '', direccion: '', banco: '', cci: '', colegio: '', anio: '', fecha_dj: ''
+    dni: '', nombre: '', ruc: '', direccion: '', banco: '', cci: '', colegio: '', anio: ''
   });
   const [bancoData, setBancoData] = useState({ nombre: '' });
   const [confirmModal, setConfirmModal] = useState<{isOpen: boolean, targetId: string | number | null, type: 'persona' | 'banco' | 'usuario', action: 'enable' | 'disable' | 'delete'}>({ isOpen: false, targetId: null, type: 'persona', action: 'disable' });
@@ -464,7 +464,7 @@ export default function Home() {
           <div className="panel animate-fade" style={{ width: '90%', maxWidth: '600px', maxHeight: '90vh', overflowY: 'auto' }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem' }}>
               <h3 style={{ fontSize: '1.25rem', fontWeight: 'bold' }}>{editingDni ? 'Editar Persona' : 'Agregar Persona Manualmente'}</h3>
-              <button onClick={() => { setShowModal(false); setEditingDni(null); setFormData({ dni: '', nombre: '', ruc: '', direccion: '', banco: '', cci: '', colegio: '', anio: '', fecha_dj: '' }); setModalError(null); }} style={{ background: 'none', border: 'none', cursor: 'pointer' }}><X size={24} color="#666" /></button>
+              <button onClick={() => { setShowModal(false); setEditingDni(null); setFormData({ dni: '', nombre: '', ruc: '', direccion: '', banco: '', cci: '', colegio: '', anio: '' }); setModalError(null); }} style={{ background: 'none', border: 'none', cursor: 'pointer' }}><X size={24} color="#666" /></button>
             </div>
 
             {modalError && (
@@ -493,12 +493,9 @@ export default function Home() {
                 <div style={{ flex: 2 }}><label style={{ fontSize: '0.8rem', fontWeight: 'bold', color: 'var(--text-muted)' }}>CCI (Opcional, 20 dígitos)</label><input className="input" value={formData.cci} onChange={e => setFormData({...formData, cci: e.target.value.replace(/\D/g, '')})} minLength={20} maxLength={20} placeholder="20 números" /></div>
               </div>
               <div><label style={{ fontSize: '0.8rem', fontWeight: 'bold', color: 'var(--text-muted)' }}>Colegio</label><input required className="input" value={formData.colegio} onChange={e => setFormData({...formData, colegio: e.target.value})} /></div>
-              <div style={{ display: 'flex', gap: '1rem' }}>
-                <div style={{ flex: 1 }}><label style={{ fontSize: '0.8rem', fontWeight: 'bold', color: 'var(--text-muted)' }}>Año</label><input required className="input" value={formData.anio} onChange={e => setFormData({...formData, anio: e.target.value})} /></div>
-                <div style={{ flex: 1 }}><label style={{ fontSize: '0.8rem', fontWeight: 'bold', color: 'var(--text-muted)' }}>Fecha DJ</label><input required type="date" className="input" value={formData.fecha_dj} onChange={e => setFormData({...formData, fecha_dj: e.target.value})} /></div>
-              </div>
+              <div><label style={{ fontSize: '0.8rem', fontWeight: 'bold', color: 'var(--text-muted)' }}>Año</label><input required className="input" value={formData.anio} onChange={e => setFormData({...formData, anio: e.target.value})} /></div>
               <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '1rem', marginTop: '1rem' }}>
-                <button type="button" className="btn btn-outline" onClick={() => { setShowModal(false); setEditingDni(null); setFormData({ dni: '', nombre: '', ruc: '', direccion: '', banco: '', cci: '', colegio: '', anio: '', fecha_dj: '' }); setModalError(null); }}>Cancelar</button>
+                <button type="button" className="btn btn-outline" onClick={() => { setShowModal(false); setEditingDni(null); setFormData({ dni: '', nombre: '', ruc: '', direccion: '', banco: '', cci: '', colegio: '', anio: '' }); setModalError(null); }}>Cancelar</button>
                 <button type="submit" className="btn"><UserPlus size={18} /> {editingDni ? 'Guardar Cambios' : 'Guardar Persona'}</button>
               </div>
             </form>
@@ -612,7 +609,7 @@ export default function Home() {
               {activeTab === 'habilitados' && (
                 <button className="btn" style={{ backgroundColor: '#10b981' }} onClick={() => {
                   setEditingDni(null);
-                  setFormData({ dni: '', nombre: '', ruc: '', direccion: '', banco: '', cci: '', colegio: '', anio: '', fecha_dj: '' });
+                  setFormData({ dni: '', nombre: '', ruc: '', direccion: '', banco: '', cci: '', colegio: '', anio: '' });
                   setShowModal(true);
                 }}>
                   <UserPlus size={18} /> Agregar Persona
@@ -702,7 +699,7 @@ export default function Home() {
                           setEditingDni(p.dni);
                           setFormData({ 
                             dni: p.dni, nombre: p.nombre || '', ruc: p.ruc || '', direccion: p.direccion || '', 
-                            banco: p.banco || '', cci: p.cci || '', colegio: p.colegio || '', anio: p.anio || '', fecha_dj: p.fecha_dj || '' 
+                            banco: p.banco || '', cci: p.cci || '', colegio: p.colegio || '', anio: p.anio || ''
                           });
                           setShowModal(true);
                         }}
