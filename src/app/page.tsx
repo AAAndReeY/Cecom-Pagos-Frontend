@@ -659,9 +659,10 @@ export default function Home() {
                     </th>
                   )}
                   <th>Ítem</th>
-                  <th>Nombre Completo</th>
-                  <th>DNI</th>
-                  <th>Colegio / Entidad</th>
+                  <th>Beneficiario</th>
+                  <th>Documentos</th>
+                  <th>Datos Bancarios</th>
+                  <th>Colegio / Año</th>
                   {activeTab === 'general' && <th>Estado</th>}
                   <th>Acciones</th>
                 </tr>
@@ -679,9 +680,22 @@ export default function Home() {
                       </td>
                     )}
                     <td>{index + 1}</td>
-                    <td style={{ fontWeight: 600 }}>{p.nombre}</td>
-                    <td>{p.dni}</td>
-                    <td>{p.colegio}</td>
+                    <td>
+                      <div style={{ fontWeight: 600, color: 'var(--text-dark)' }}>{p.nombre}</div>
+                      <div style={{ fontSize: '0.8rem', color: '#64748b', marginTop: '4px' }}>Dir: {p.direccion}</div>
+                    </td>
+                    <td>
+                      <div style={{ fontWeight: 600, color: 'var(--text-dark)' }}>DNI: {p.dni}</div>
+                      <div style={{ fontSize: '0.8rem', color: '#64748b', marginTop: '4px' }}>RUC: {p.ruc || 'N/A'}</div>
+                    </td>
+                    <td>
+                      <div style={{ fontWeight: 600, color: 'var(--secondary)' }}>{p.banco}</div>
+                      <div style={{ fontSize: '0.8rem', color: '#64748b', marginTop: '4px' }}>CCI: {p.cci || 'N/A'}</div>
+                    </td>
+                    <td>
+                      <div style={{ fontWeight: 600, color: 'var(--text-dark)' }}>{p.colegio}</div>
+                      <div style={{ fontSize: '0.8rem', color: '#64748b', marginTop: '4px' }}>Año: {p.anio}</div>
+                    </td>
                     {activeTab === 'general' && (
                       <td>
                         <span style={{ 
@@ -744,7 +758,7 @@ export default function Home() {
                 ))}
                 {filteredPersonas.length === 0 && (
                   <tr>
-                    <td colSpan={activeTab === 'habilitados' ? 7 : 6} style={{ textAlign: 'center', padding: '3rem', color: 'var(--text-muted)' }}>
+                    <td colSpan={7} style={{ textAlign: 'center', padding: '3rem', color: 'var(--text-muted)' }}>
                       <FileText size={48} style={{ opacity: 0.2, margin: '0 auto 1rem auto', display: 'block' }} />
                       No hay registros disponibles.
                     </td>
