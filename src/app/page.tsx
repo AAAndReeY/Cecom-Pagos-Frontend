@@ -334,7 +334,7 @@ export default function Home() {
       toast.success('Usuario creado');
       fetchUsers(token!);
       setShowUserModal(false);
-      setUserData({ username: '', password: '', rol: 'USER' });
+      setUserData({ username: '', password: '', rol: 'USER', dni: '', nombre: '', apellido: '' });
       setModalError(null);
     } catch (error: any) {
       const apiMessage = error.response?.data?.message;
