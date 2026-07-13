@@ -19,6 +19,12 @@ export default function Home() {
   const [isUploading, setIsUploading] = useState(false);
   const [isGenerating, setIsGenerating] = useState(false);
 
+  // Paginación y Filtros de Servidor
+  const [page, setPage] = useState(1);
+  const [totalPages, setTotalPages] = useState(1);
+  const [totalPersonas, setTotalPersonas] = useState(0);
+  const [filterSinRegistro, setFilterSinRegistro] = useState(false);
+
   // Nuevos estados para CRUD y Vistas
   const [activeTab, setActiveTab] = useState<'habilitados' | 'general' | 'bancos' | 'usuarios'>('habilitados');
   const [showModal, setShowModal] = useState(false);
@@ -47,10 +53,18 @@ export default function Home() {
       setToken(savedToken);
       if (savedUsername) setUsername(savedUsername);
       if (savedRol) setUserRol(savedRol);
-      fetchPersonas(savedToken);
       fetchBancos(savedToken);
     }
   }, []);
+
+  useEffect(() => {
+    if (!token) return;
+    const delayDebounceFn = setTimeout(() => {
+      fetchPersonas(token, page, searchTerm, filterSinRegistro);
+    }, 300); // 300ms delay para no saturar al tipear
+
+    return () => clearTimeout(delayDebounceFn);
+  }, [page, searchTerm, filterSinRegistro, token]);
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -82,13 +96,25 @@ export default function Home() {
     setUserRol(null);
   };
 
-  const fetchPersonas = async (authToken: string) => {
+  const fetchPersonas = async (authToken: string, currentPage = page, currentSearch = searchTerm, currentSinRegistro = filterSinRegistro) => {
     try {
       const res = await axios.get(`${API_URL}/pagos/personas`, {
-        headers: { Authorization: `Bearer ${authToken}` }
+        headers: { Authorization: `Bearer ${authToken}` },
+        params: {
+          page: currentPage,
+          limit: 50,
+          search: currentSearch,
+          sinRegistro: currentSinRegistro,
+        }
       });
-      setPersonas(res.data);
-      setSelectedDnis(new Set()); // Reset selections when data reloads
+      if (res.data && res.data.data) {
+        setPersonas(res.data.data);
+        setTotalPages(res.data.totalPages);
+        setTotalPersonas(res.data.total);
+      } else {
+        setPersonas(res.data);
+      }
+      // Se eliminó setSelectedDnis(new Set()) para permitir seleccionar en varias páginas
     } catch (error) {
       toast.error('Error al cargar datos');
       if (axios.isAxiosError(error) && error.response?.status === 401) {
@@ -368,14 +394,12 @@ export default function Home() {
     setSelectedDnis(newSelection);
   };
 
-  // Filtrado principal por estado y busqueda
   const filteredPersonas = personas.filter(p => {
     if (activeTab === 'habilitados' && !p.activo) return false;
     if (activeTab === 'general' && estadoFiltro === 'ACTIVO' && !p.activo) return false;
     if (activeTab === 'general' && estadoFiltro === 'INACTIVO' && p.activo) return false;
     
-    const search = searchTerm.toLowerCase();
-    return p.nombre.toLowerCase().includes(search) || p.dni.includes(search);
+    return true; // La búsqueda por texto y "SIN REGISTRO" ahora se hace en el Backend
   });
 
   if (!token) {
@@ -588,8 +612,26 @@ export default function Home() {
                   style={{ paddingLeft: '2.5rem', width: '100%' }} 
                   placeholder="Buscar por DNI o Nombre..." 
                   value={searchTerm}
-                  onChange={e => setSearchTerm(e.target.value)}
+                  onChange={e => {
+                    setSearchTerm(e.target.value);
+                    setPage(1);
+                  }}
                 />
+              </div>
+              <label style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', cursor: 'pointer', whiteSpace: 'nowrap', userSelect: 'none' }}>
+                <input 
+                  type="checkbox" 
+                  checked={filterSinRegistro} 
+                  onChange={(e) => {
+                    setFilterSinRegistro(e.target.checked);
+                    setPage(1);
+                  }}
+                  style={{ width: '1.2rem', height: '1.2rem', accentColor: 'var(--primary)' }}
+                />
+                Solo incompletos
+              </label>
+              <div style={{ color: 'var(--text-muted)', fontSize: '0.9rem', whiteSpace: 'nowrap' }}>
+                Total: {totalPersonas} registros
               </div>
               {activeTab === 'general' && (
                 <select 
@@ -668,7 +710,22 @@ export default function Home() {
                 </tr>
               </thead>
               <tbody>
-                {filteredPersonas.map((p, index) => (
+              {(() => {
+                const renderField = (value: string, prefix = '', style = {}) => {
+                  if (!value) return <div style={style}>{prefix}N/A</div>;
+                  const isSinRegistro = value.startsWith('SIN REGISTRO');
+                  const displayValue = isSinRegistro ? 'SIN REGISTRO' : value;
+                  
+                  if (isSinRegistro) {
+                    return (
+                      <div style={{ ...style, color: 'var(--danger, #ef4444)' }}>
+                        {prefix}{displayValue}
+                      </div>
+                    );
+                  }
+                  return <div style={style}>{prefix}{displayValue}</div>;
+                };
+                return filteredPersonas.map((p, index) => (
                   <tr key={p.dni} style={{ opacity: p.activo ? 1 : 0.5 }}>
                     {activeTab === 'habilitados' && (
                       <td>
@@ -681,20 +738,20 @@ export default function Home() {
                     )}
                     <td>{index + 1}</td>
                     <td>
-                      <div style={{ fontWeight: 600, color: 'var(--text-dark)' }}>{p.nombre}</div>
-                      <div style={{ fontSize: '0.8rem', color: '#64748b', marginTop: '4px' }}>Dir: {p.direccion}</div>
+                      {renderField(p.nombre, '', { fontWeight: 600, color: 'var(--text-dark)' })}
+                      {renderField(p.direccion, 'Dir: ', { fontSize: '0.8rem', color: '#64748b', marginTop: '4px' })}
                     </td>
                     <td>
-                      <div style={{ fontWeight: 600, color: 'var(--text-dark)' }}>DNI: {p.dni}</div>
-                      <div style={{ fontSize: '0.8rem', color: '#64748b', marginTop: '4px' }}>RUC: {p.ruc || 'N/A'}</div>
+                      {renderField(p.dni, 'DNI: ', { fontWeight: 600, color: 'var(--text-dark)' })}
+                      {renderField(p.ruc, 'RUC: ', { fontSize: '0.8rem', color: '#64748b', marginTop: '4px' })}
                     </td>
                     <td>
-                      <div style={{ fontWeight: 600, color: 'var(--secondary)' }}>{p.banco}</div>
-                      <div style={{ fontSize: '0.8rem', color: '#64748b', marginTop: '4px' }}>CCI: {p.cci || 'N/A'}</div>
+                      {renderField(p.banco, '', { fontWeight: 600, color: 'var(--secondary)' })}
+                      {renderField(p.cci, 'CCI: ', { fontSize: '0.8rem', color: '#64748b', marginTop: '4px' })}
                     </td>
                     <td>
-                      <div style={{ fontWeight: 600, color: 'var(--text-dark)' }}>{p.colegio}</div>
-                      <div style={{ fontSize: '0.8rem', color: '#64748b', marginTop: '4px' }}>Año: {p.anio}</div>
+                      {renderField(p.colegio, '', { fontWeight: 600, color: 'var(--text-dark)' })}
+                      {renderField(p.anio, 'Año: ', { fontSize: '0.8rem', color: '#64748b', marginTop: '4px' })}
                     </td>
                     {activeTab === 'general' && (
                       <td>
@@ -755,7 +812,8 @@ export default function Home() {
                       </button>
                     </td>
                   </tr>
-                ))}
+                ));
+              })()}
                 {filteredPersonas.length === 0 && (
                   <tr>
                     <td colSpan={7} style={{ textAlign: 'center', padding: '3rem', color: 'var(--text-muted)' }}>
@@ -766,6 +824,23 @@ export default function Home() {
                 )}
               </tbody>
             </table>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '1rem', borderTop: '1px solid var(--border)' }}>
+              <button 
+                className="btn btn-secondary" 
+                disabled={page === 1}
+                onClick={() => setPage(p => Math.max(1, p - 1))}
+              >
+                Anterior
+              </button>
+              <span style={{ color: 'var(--text-muted)' }}>Página {page} de {totalPages || 1}</span>
+              <button 
+                className="btn btn-secondary" 
+                disabled={page >= totalPages}
+                onClick={() => setPage(p => Math.min(totalPages, p + 1))}
+              >
+                Siguiente
+              </button>
+            </div>
           </div>
         </div>
         )}
