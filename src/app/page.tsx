@@ -102,7 +102,7 @@ export default function Home() {
         headers: { Authorization: `Bearer ${authToken}` },
         params: {
           page: currentPage,
-          limit: 50,
+          limit: 20,
           search: currentSearch,
           sinRegistro: currentSinRegistro,
         }
@@ -604,8 +604,8 @@ export default function Home() {
         <div className="panel animate-fade">
           <div style={{ display: 'flex', justifyContent: 'space-between', flexWrap: 'wrap', gap: '1rem', marginBottom: '1.5rem' }}>
             
-            <div style={{ display: 'flex', gap: '1rem', flex: 1, minWidth: '300px' }}>
-              <div style={{ position: 'relative', flex: 2 }}>
+            <div style={{ display: 'flex', gap: '1rem', alignItems: 'center', flex: 1, minWidth: '300px' }}>
+              <div style={{ position: 'relative', flex: 1 }}>
                 <Search size={18} style={{ position: 'absolute', left: '1rem', top: '50%', transform: 'translateY(-50%)', color: 'var(--text-muted)' }} />
                 <input 
                   className="input" 
@@ -628,11 +628,8 @@ export default function Home() {
                   }}
                   style={{ width: '1.2rem', height: '1.2rem', accentColor: 'var(--primary)' }}
                 />
-                Solo incompletos
+                Sin Registros
               </label>
-              <div style={{ color: 'var(--text-muted)', fontSize: '0.9rem', whiteSpace: 'nowrap' }}>
-                Total: {totalPersonas} registros
-              </div>
               {activeTab === 'general' && (
                 <select 
                   className="input" 
@@ -825,21 +822,26 @@ export default function Home() {
               </tbody>
             </table>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '1rem', borderTop: '1px solid var(--border)' }}>
-              <button 
-                className="btn btn-secondary" 
-                disabled={page === 1}
-                onClick={() => setPage(p => Math.max(1, p - 1))}
-              >
-                Anterior
-              </button>
-              <span style={{ color: 'var(--text-muted)' }}>Página {page} de {totalPages || 1}</span>
-              <button 
-                className="btn btn-secondary" 
-                disabled={page >= totalPages}
-                onClick={() => setPage(p => Math.min(totalPages, p + 1))}
-              >
-                Siguiente
-              </button>
+              <div style={{ color: 'var(--text-muted)', fontSize: '0.9rem', fontWeight: 500 }}>
+                Total: {totalPersonas} registros
+              </div>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
+                <button 
+                  className="btn btn-secondary" 
+                  disabled={page === 1}
+                  onClick={() => setPage(p => Math.max(1, p - 1))}
+                >
+                  Anterior
+                </button>
+                <span style={{ color: 'var(--text-muted)' }}>Página {page} de {totalPages || 1}</span>
+                <button 
+                  className="btn btn-secondary" 
+                  disabled={page >= totalPages}
+                  onClick={() => setPage(p => Math.min(totalPages, p + 1))}
+                >
+                  Siguiente
+                </button>
+              </div>
             </div>
           </div>
         </div>
