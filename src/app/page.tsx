@@ -21,7 +21,7 @@ export default function Home() {
 
   // Paginación y Filtros de Servidor
   const [page, setPage] = useState(1);
-  const [limit, setLimit] = useState(20);
+  const [limit, setLimit] = useState(5);
   const [totalPages, setTotalPages] = useState(1);
   const [totalPersonas, setTotalPersonas] = useState(0);
   const [filterSinRegistro, setFilterSinRegistro] = useState(false);
@@ -833,8 +833,8 @@ export default function Home() {
                   }}
                   style={{ border: 'none', background: 'transparent', color: 'var(--text-dark)', cursor: 'pointer', outline: 'none', fontSize: '0.85rem' }}
                 >
+                  <option value={5}>5</option>
                   <option value={10}>10</option>
-                  <option value={20}>20</option>
                   <option value={25}>25</option>
                   <option value={50}>50</option>
                   <option value={100}>100</option>
