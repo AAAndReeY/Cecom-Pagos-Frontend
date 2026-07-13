@@ -822,7 +822,8 @@ export default function Home() {
                 )}
               </tbody>
             </table>
-            <div style={{ display: 'flex', justifyContent: 'flex-end', alignItems: 'center', padding: '1rem', borderTop: '1px solid var(--border)', gap: '2rem', fontSize: '0.85rem', color: 'var(--text-muted)' }}>
+          </div>
+          <div style={{ display: 'flex', justifyContent: 'flex-end', alignItems: 'center', padding: '1rem', marginTop: '0.5rem', gap: '2rem', fontSize: '0.85rem', color: 'var(--text-muted)' }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
                 <span>Filas por página:</span>
                 <select 
@@ -835,6 +836,7 @@ export default function Home() {
                 >
                   <option value={5}>5</option>
                   <option value={10}>10</option>
+                  <option value={20}>20</option>
                   <option value={25}>25</option>
                   <option value={50}>50</option>
                   <option value={100}>100</option>
@@ -879,7 +881,6 @@ export default function Home() {
                   »
                 </button>
               </div>
-            </div>
           </div>
         </div>
         )}
