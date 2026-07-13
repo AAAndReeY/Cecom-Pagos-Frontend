@@ -21,7 +21,7 @@ export default function Home() {
 
   // Paginación y Filtros de Servidor
   const [page, setPage] = useState(1);
-  const [limit, setLimit] = useState(5);
+  const [limit, setLimit] = useState(20);
   const [totalPages, setTotalPages] = useState(1);
   const [totalPersonas, setTotalPersonas] = useState(0);
   const [filterSinRegistro, setFilterSinRegistro] = useState(false);
