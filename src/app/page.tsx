@@ -21,6 +21,7 @@ export default function Home() {
 
   // Paginación y Filtros de Servidor
   const [page, setPage] = useState(1);
+  const [limit, setLimit] = useState(20);
   const [totalPages, setTotalPages] = useState(1);
   const [totalPersonas, setTotalPersonas] = useState(0);
   const [filterSinRegistro, setFilterSinRegistro] = useState(false);
@@ -60,11 +61,11 @@ export default function Home() {
   useEffect(() => {
     if (!token) return;
     const delayDebounceFn = setTimeout(() => {
-      fetchPersonas(token, page, searchTerm, filterSinRegistro);
+      fetchPersonas(token, page, limit, searchTerm, filterSinRegistro);
     }, 300); // 300ms delay para no saturar al tipear
 
     return () => clearTimeout(delayDebounceFn);
-  }, [page, searchTerm, filterSinRegistro, token]);
+  }, [page, limit, searchTerm, filterSinRegistro, token]);
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -77,7 +78,7 @@ export default function Home() {
       localStorage.setItem('username', loggedUsername);
       localStorage.setItem('rol', rol);
       toast.success('Sesión iniciada correctamente');
-      fetchPersonas(access_token);
+      fetchPersonas(access_token, page, limit, searchTerm, filterSinRegistro);
       fetchBancos(access_token);
     } catch (error) {
       toast.error('Credenciales incorrectas');
@@ -96,13 +97,13 @@ export default function Home() {
     setUserRol(null);
   };
 
-  const fetchPersonas = async (authToken: string, currentPage = page, currentSearch = searchTerm, currentSinRegistro = filterSinRegistro) => {
+  const fetchPersonas = async (authToken: string, currentPage = page, currentLimit = limit, currentSearch = searchTerm, currentSinRegistro = filterSinRegistro) => {
     try {
       const res = await axios.get(`${API_URL}/pagos/personas`, {
         headers: { Authorization: `Bearer ${authToken}` },
         params: {
           page: currentPage,
-          limit: 20,
+          limit: currentLimit,
           search: currentSearch,
           sinRegistro: currentSinRegistro,
         }
@@ -821,25 +822,60 @@ export default function Home() {
                 )}
               </tbody>
             </table>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '1rem', borderTop: '1px solid var(--border)' }}>
-              <div style={{ color: 'var(--text-muted)', fontSize: '0.9rem', fontWeight: 500 }}>
-                Total: {totalPersonas} registros
+            <div style={{ display: 'flex', justifyContent: 'flex-end', alignItems: 'center', padding: '1rem', borderTop: '1px solid var(--border)', gap: '2rem', fontSize: '0.85rem', color: 'var(--text-muted)' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                <span>Filas por página:</span>
+                <select 
+                  value={limit} 
+                  onChange={(e) => {
+                    setLimit(Number(e.target.value));
+                    setPage(1); // Regresar a la primera página al cambiar el límite
+                  }}
+                  style={{ border: 'none', background: 'transparent', color: 'var(--text-dark)', cursor: 'pointer', outline: 'none', fontSize: '0.85rem' }}
+                >
+                  <option value={10}>10</option>
+                  <option value={20}>20</option>
+                  <option value={50}>50</option>
+                  <option value={100}>100</option>
+                </select>
               </div>
+              
+              <div>
+                {totalPersonas > 0 ? `${(page - 1) * limit + 1}-${Math.min(page * limit, totalPersonas)} de ${totalPersonas}` : '0-0 de 0'}
+              </div>
+
               <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
                 <button 
-                  className="btn btn-secondary" 
+                  onClick={() => setPage(1)} 
                   disabled={page === 1}
-                  onClick={() => setPage(p => Math.max(1, p - 1))}
+                  style={{ background: 'none', border: 'none', cursor: page === 1 ? 'not-allowed' : 'pointer', opacity: page === 1 ? 0.3 : 1, color: 'var(--text-dark)' }}
+                  title="Primera página"
                 >
-                  Anterior
+                  «
                 </button>
-                <span style={{ color: 'var(--text-muted)' }}>Página {page} de {totalPages || 1}</span>
                 <button 
-                  className="btn btn-secondary" 
-                  disabled={page >= totalPages}
-                  onClick={() => setPage(p => Math.min(totalPages, p + 1))}
+                  onClick={() => setPage(p => Math.max(1, p - 1))} 
+                  disabled={page === 1}
+                  style={{ background: 'none', border: 'none', cursor: page === 1 ? 'not-allowed' : 'pointer', opacity: page === 1 ? 0.3 : 1, color: 'var(--text-dark)' }}
+                  title="Página anterior"
                 >
-                  Siguiente
+                  ‹
+                </button>
+                <button 
+                  onClick={() => setPage(p => Math.min(totalPages, p + 1))} 
+                  disabled={page >= totalPages || totalPages === 0}
+                  style={{ background: 'none', border: 'none', cursor: page >= totalPages || totalPages === 0 ? 'not-allowed' : 'pointer', opacity: page >= totalPages || totalPages === 0 ? 0.3 : 1, color: 'var(--text-dark)' }}
+                  title="Página siguiente"
+                >
+                  ›
+                </button>
+                <button 
+                  onClick={() => setPage(totalPages)} 
+                  disabled={page >= totalPages || totalPages === 0}
+                  style={{ background: 'none', border: 'none', cursor: page >= totalPages || totalPages === 0 ? 'not-allowed' : 'pointer', opacity: page >= totalPages || totalPages === 0 ? 0.3 : 1, color: 'var(--text-dark)' }}
+                  title="Última página"
+                >
+                  »
                 </button>
               </div>
             </div>
